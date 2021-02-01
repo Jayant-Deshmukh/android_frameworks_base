@@ -51,6 +51,7 @@ public class AmbientIndicationContainer extends AutoReinflateContainer implement
     private boolean mDozing;
     private boolean mKeyguard;
     private boolean mVisible;
+    private boolean mChargingIndicationChecked;
     private StatusBar mStatusBar;
     private TextView mText;
     private Context mContext;
@@ -123,7 +124,7 @@ public class AmbientIndicationContainer extends AutoReinflateContainer implement
         mInfoAvailable = false;
         mNpInfoAvailable = false;
         mText.setText(null);
-        setVisibility(false);
+        setVisibility(false, true);
     }
 
     public void initializeView(StatusBar statusBar, Handler handler, KeyguardIndicationController keyguardIndicationController) {
@@ -160,17 +161,22 @@ public class AmbientIndicationContainer extends AutoReinflateContainer implement
 
     private void updatePosition() {
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) this.getLayoutParams();
-        if (mKeyguardIndicationController.isChargingIndicationVisible()) {
-            lp.setMargins(0, 0, 0, mKGmargin);
+        if (isChargingIndicationVisible()) {
+            if (!mChargingIndicationChecked) {
+                mChargingIndicationChecked = true;
+                lp.setMargins(0, 0, 0, mKGmargin);
+            }
         } else {
-            lp.setMargins(0, 0, 0, 0);
+            if (mChargingIndicationChecked) {
+                mChargingIndicationChecked = false;
+                lp.setMargins(0, 0, 0, 0);
+            }
         }
         this.setLayoutParams(lp);
     }
 
-    private boolean showsChargingAnimation() {
-        return Settings.System.getIntForUser(mContext.getContentResolver(),
-                    Settings.System.LOCKSCREEN_CHARGING_ANIMATION_STYLE, 1, UserHandle.USER_CURRENT) > 0;
+    private boolean isChargingIndicationVisible() {
+        return mKeyguardIndicationController.isChargingIndicationVisible();
     }
 
     public View getTitleView() {
@@ -186,24 +192,30 @@ public class AmbientIndicationContainer extends AutoReinflateContainer implement
             } else {
                 mText.setText(null);
             }
-            setVisibility(shouldShow());
+            setVisibility(shouldShow(), true);
+        }
+        if (shouldShow()) {
+            updatePosition();
         }
     }
 
     public void updateDozingState(boolean dozing) {
         if (mDozing != dozing) {
             mDozing = dozing;
-            setVisibility(shouldShow());
+            setVisibility(shouldShow(), true);
+        }
+        if (shouldShow()) {
+            updatePosition();
         }
     }
 
-    private void setVisibility(boolean shouldShow) {
+    private void setVisibility(boolean shouldShow, boolean skipPosition) {
         if (mVisible != shouldShow) {
             mVisible = shouldShow;
             mAmbientIndication.setVisibility(shouldShow ? View.VISIBLE : View.INVISIBLE);
-            if (showsChargingAnimation() && shouldShow)) {
-                updatePosition();
-            }
+        }
+        if (!skipPosition && shouldShow) {
+            updatePosition();
         }
     }
 
@@ -264,7 +276,7 @@ public class AmbientIndicationContainer extends AutoReinflateContainer implement
         }
         if (mInfoToSet != null) {
             mText.setText(mInfoToSet);
-            setVisibility(shouldShow());
+            setVisibility(shouldShow(), false);
         } else {
             hideIndication();
         }
