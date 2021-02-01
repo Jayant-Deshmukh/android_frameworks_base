@@ -201,7 +201,7 @@ public class AmbientIndicationContainer extends AutoReinflateContainer implement
         if (mVisible != shouldShow) {
             mVisible = shouldShow;
             mAmbientIndication.setVisibility(shouldShow ? View.VISIBLE : View.INVISIBLE);
-            if (showsChargingAnimation() && isAod() && shouldShow)) {
+            if (showsChargingAnimation() && shouldShow)) {
                 updatePosition();
             }
         }
